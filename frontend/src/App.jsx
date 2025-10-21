@@ -1,9 +1,11 @@
 import { useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function App() {
   const [file, setFile] = useState(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
 
   const handleSubmit = async () => {
     if (!file || !startDate || !endDate) {
@@ -13,8 +15,8 @@ export default function App() {
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("start_date", startDate);
-    formData.append("end_date", endDate);
+    formData.append("start_date", startDate.toISOString());
+    formData.append("end_date", endDate.toISOString());
 
     const response = await fetch("http://127.0.0.1:8000/find_emails", {
       method: "POST",
@@ -39,9 +41,9 @@ export default function App() {
           </label>
           <input
             type="file"
-            accept=".ost,.pst"
+            accept=".ost, .pst"
             onChange={(e) => setFile(e.target.files[0])}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800"
           />
           {file && (
             <p className="text-sm text-gray-500 mt-1">
@@ -56,11 +58,15 @@ export default function App() {
             <label className="block text-gray-700 font-medium mb-2">
               Start Date
             </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            <DatePicker
+              selected={startDate}
+              onChange={(date) => setStartDate(date)}
+              selectsStart
+              startDate={startDate}
+              endDate={endDate}
+              dateFormat="yyyy-MM-dd"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-700"
+              placeholderText="Pick start date"
             />
           </div>
 
@@ -68,11 +74,16 @@ export default function App() {
             <label className="block text-gray-700 font-medium mb-2">
               End Date
             </label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            <DatePicker
+              selected={endDate}
+              onChange={(date) => setEndDate(date)}
+              selectsEnd
+              startDate={startDate}
+              endDate={endDate}
+              minDate={startDate}
+              dateFormat="yyyy-MM-dd"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-700"
+              placeholderText="Pick end date"
             />
           </div>
         </div>
