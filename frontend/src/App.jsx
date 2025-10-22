@@ -1,101 +1,117 @@
-import { useState } from "react";
-import DatePicker from "react-datepicker";
+import { useState } from 'react';
+import axios from 'axios';
+import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
+import './App.css';
 
-export default function App() {
+function App() {
   const [file, setFile] = useState(null);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [startDate, setStartDate] = useState(new Date('2022-04-01'));
+  const [endDate, setEndDate] = useState(new Date('2022-04-30'));
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = async () => {
-    if (!file || !startDate || !endDate) {
-      alert("Please select file and date range");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!file) {
+      setError('Please select a .pst or .ost file');
       return;
     }
 
+    setLoading(true);
+    setError('');
+    
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("start_date", startDate.toISOString());
-    formData.append("end_date", endDate.toISOString());
+    formData.append('file', file);
+    formData.append('start_time', startDate.toISOString());
+    formData.append('end_time', endDate.toISOString());
 
-    const response = await fetch("http://127.0.0.1:8000/find_emails", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await response.json();
-    console.log("Emails found:", data);
+    try {
+      const response = await axios.post('http://localhost:8000/search', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setResults(response.data.results);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md space-y-6">
-        <h1 className="text-2xl font-bold text-gray-800 text-center">
-          OST Email Finder
-        </h1>
+    <div className="container">
+      <header>
+        <h1>📧 Email Search App</h1>
+        <p>Search emails in .PST/.OST files by date range</p>
+      </header>
 
-        {/* File Selector */}
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">
-            Select .ost file
-          </label>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label>📁 Select .PST or .OST File</label>
           <input
             type="file"
-            accept=".ost, .pst"
+            accept=".pst,.ost"
             onChange={(e) => setFile(e.target.files[0])}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800"
           />
-          {file && (
-            <p className="text-sm text-gray-500 mt-1">
-              Selected: {file.name}
-            </p>
-          )}
+          {file && <p style={{fontSize: '0.875rem', color: '#64748b'}}>Selected: {file.name}</p>}
         </div>
 
-        {/* Date Pickers */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="form-group date-pickers">
           <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              Start Date
-            </label>
+            <label>📅 Start Date</label>
             <DatePicker
               selected={startDate}
-              onChange={(date) => setStartDate(date)}
-              selectsStart
-              startDate={startDate}
-              endDate={endDate}
-              dateFormat="yyyy-MM-dd"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-700"
-              placeholderText="Pick start date"
+              onChange={setStartDate}
+              dateFormat="MMMM d, yyyy"
+              className="form-control"
             />
           </div>
-
           <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              End Date
-            </label>
+            <label>📅 End Date</label>
             <DatePicker
               selected={endDate}
-              onChange={(date) => setEndDate(date)}
-              selectsEnd
-              startDate={startDate}
-              endDate={endDate}
-              minDate={startDate}
-              dateFormat="yyyy-MM-dd"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-700"
-              placeholderText="Pick end date"
+              onChange={setEndDate}
+              dateFormat="MMMM d, yyyy"
+              className="form-control"
             />
           </div>
         </div>
 
-        {/* Submit Button */}
-        <button
-          onClick={handleSubmit}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
-        >
-          Find Emails
+        <button type="submit" disabled={loading || !file}>
+          {loading ? 'Searching...' : '🔍 Search Emails'}
         </button>
-      </div>
+      </form>
+
+      {error && <div className="error">❌ {error}</div>}
+
+      {results.length > 0 && (
+        <div className="results">
+          <div className="results-header">
+            <h3>📊 Results ({results.length} emails found)</h3>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Sender</th>
+                <th>Subject</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((email, index) => (
+                <tr key={index}>
+                  <td>{email.date}</td>
+                  <td>{email.sender}</td>
+                  <td>{email.subject}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
+
+export default App;
