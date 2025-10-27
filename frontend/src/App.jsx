@@ -24,14 +24,17 @@ function App() {
     
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('start_time', startDate.toISOString());
-    formData.append('end_time', endDate.toISOString());
 
     try {
-      const response = await axios.post('http://localhost:8000/search', formData, {
+      const response = await axios.post('http://localhost:8000/read_pst_ost', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setResults(response.data.results);
+      const allMessages = response.data.messages_preview;
+      const filteredMessages = allMessages.filter(msg => {
+        const msgDate = new Date(msg.date);
+        return msgDate >= startDate && msgDate <= endDate;
+      });
+      setResults(filteredMessages);
     } catch (err) {
       setError(err.response?.data?.detail || 'An error occurred');
     } finally {
