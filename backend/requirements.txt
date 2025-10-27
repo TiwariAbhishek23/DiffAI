@@ -1,0 +1,4 @@
+uvicorn
+fastapi
+python-multipart
+Aspose.Email-for-Python-via-NET
